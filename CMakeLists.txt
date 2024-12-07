@@ -24,12 +24,16 @@ add_metal_shader_library(gpu_shaders
 )
 target_include_directories(gpu_shaders PRIVATE lib/)
 
-add_executable(gpu_baseline MACOSX_BUNDLE matmul-gpu-base/main.cpp )
-target_include_directories(gpu_baseline PRIVATE metal/)
+add_executable(gpu_baseline MACOSX_BUNDLE matmul-gpu-base/main.mm)
+target_include_directories(gpu_baseline PRIVATE libgpu/)
 target_link_libraries(gpu_baseline "-framework Metal -framework Foundation -framework QuartzCore -framework CoreGraphics")
 target_embed_metal_shader_libraries(gpu_baseline gpu_shaders)
 
 add_executable(gpu_mps MACOSX_BUNDLE matmul-gpu-mps/main.mm)
-target_include_directories(gpu_mps PRIVATE metal/)
 target_link_libraries(gpu_mps "-framework MetalPerformanceShaders -framework Metal -framework Foundation -framework QuartzCore")
 target_embed_metal_shader_libraries(gpu_mps gpu_shaders)
+
+add_executable(gpu_nv MACOSX_BUNDLE matmul-gpu-nv/main.mm)
+target_include_directories(gpu_nv PRIVATE libgpu/)
+target_link_libraries(gpu_nv "-framework Metal -framework Foundation -framework QuartzCore")
+target_embed_metal_shader_libraries(gpu_nv gpu_shaders)

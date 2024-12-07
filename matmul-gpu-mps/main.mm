@@ -9,11 +9,10 @@
 int main() {
     id<MTLDevice> device = MTLCreateSystemDefaultDevice();
     assert(device != nullptr);
-    test_suite([device](unsigned int n, const float* left, const float* right, const float* out) {
-        size_t bytes = n * n * sizeof(float);
-        id<MTLBuffer> bufA = [device newBufferWithBytes:left length:bytes options:MTLResourceStorageModeShared];
-        id<MTLBuffer> bufB = [device newBufferWithBytes:right length:bytes options:MTLResourceStorageModeShared];
-        id<MTLBuffer> bufC = [device newBufferWithBytes:out length:bytes options:MTLResourceStorageModeShared];
+    test_suite([device](unsigned int n, unsigned int memory_length, void* left, void* right, void* out) {
+        id<MTLBuffer> bufA = [device newBufferWithBytesNoCopy: left length:memory_length options:MTLResourceStorageModeShared deallocator:nil];
+        id<MTLBuffer> bufB = [device newBufferWithBytesNoCopy: right length:memory_length options:MTLResourceStorageModeShared deallocator:nil];
+        id<MTLBuffer> bufC = [device newBufferWithBytesNoCopy: out length:memory_length options:MTLResourceStorageModeShared deallocator:nil];
         assert(bufA != nullptr);
         assert(bufB != nullptr);
         assert(bufC != nullptr);
@@ -34,11 +33,6 @@ int main() {
         // Execute and clean.
         [commandBuffer commit];
         [commandBuffer waitUntilCompleted];
-        auto* contents = (float*) bufC.contents;
-        for (int i = 0; i < 10; ++i) {
-            std::cout << contents[i] << " ";
-        }
-        std::cout << std::endl;
     }, "../../../../data/");
     [device release];
 }
