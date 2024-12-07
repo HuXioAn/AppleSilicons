@@ -6,7 +6,21 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_SOURCE_DIR}/cmake")
 
 include_directories(lib/)
 
+set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
+set(OpenMP_CXX_FLAG "-Xclang -fopenmp")
+set(OpenMP_CXX_INCLUDE_DIR "/opt/homebrew/opt/libomp/include")
+set(OpenMP_CXX_LIB_NAMES "libomp")
+set(OpenMP_C_FLAG "-Xclang -fopenmp")
+set(OpenMP_C_INCLUDE_DIR "/opt/homebrew/opt/libomp/include")
+set(OpenMP_C_LIB_NAMES "libomp")
+set(OpenMP_libomp_LIBRARY "/opt/homebrew/opt/libomp/lib/libomp.dylib")
+
+find_package(OpenMP COMPONENTS CXX REQUIRED)
+
 add_executable(baseline matmul-cpu-base/main.cpp)
+
+add_executable(omp matmul-cpu-omp/main.cpp)
+target_link_libraries(omp PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(blas matmul-blas/main.cpp)
 target_link_libraries(blas "-framework Accelerate")

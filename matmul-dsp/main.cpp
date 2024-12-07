@@ -1,5 +1,5 @@
 #include <vecLib/vDSP.h>
-#include "../lib/testlib.h"
+#include "testlib.h"
 
 void dsp(unsigned int nu, [[maybe_unused]] unsigned int memory_length, const float* left, const float* right, float* out) {
     int n = static_cast<int>(nu);
