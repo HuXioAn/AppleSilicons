@@ -3,13 +3,7 @@
 
 #include <Metal/Metal.h>
 #include <string>
-
-typedef struct
-{
-    unsigned int row_dim_x; // Number of rows in X
-    unsigned int col_dim_x; // Number of columns in X
-    unsigned int inner_dim; // Number of columns in A = number of rows in B
-} MatMulParams;
+#include <shaderinfo.h>
 
 bool init_custom_shaders(id<MTLDevice> &device, id<MTLComputePipelineState> &matMultiplyFunctionPSO, const std::string& shader) {
     device = MTLCreateSystemDefaultDevice();

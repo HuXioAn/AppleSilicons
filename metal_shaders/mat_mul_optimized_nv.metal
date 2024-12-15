@@ -6,7 +6,7 @@
 //
 
 #include <metal_stdlib>
-#include "ShaderParams.h"
+#include "shaderinfo.h"
 using namespace metal;
  
 /**

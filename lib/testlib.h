@@ -37,8 +37,8 @@ void internal_load_matrix(const std::string& pathPrefix, unsigned short n, unsig
 
 template<typename MatMul>
 void test_suite(MatMul consumer, const std::string &pathPrefix = "../data/") {
-    // { 150u, 500u, 1000u, 2500u, 5000u, 10000u }
-    for (unsigned int n : { 150u }) {
+    // { 150u, 500u, 1000u, 2000u, 5000u, 10000u }
+    for (unsigned int n : { 2500u }) {
         // Create all the arrays.
         unsigned int memory_length;
         float* left = make_page_aligned_matrix(n, memory_length);

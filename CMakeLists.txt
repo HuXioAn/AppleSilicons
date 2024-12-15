@@ -37,6 +37,7 @@ add_metal_shader_library(gpu_shaders
         metal_shaders/mat_mul_optimized_nv.metal
 )
 target_include_directories(gpu_shaders PRIVATE lib/)
+target_include_directories(gpu_shaders PRIVATE libgpu/)
 
 add_executable(gpu_baseline MACOSX_BUNDLE matmul-gpu-base/main.mm)
 target_include_directories(gpu_baseline PRIVATE libgpu/)
