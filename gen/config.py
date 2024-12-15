@@ -1,6 +1,6 @@
 import os
 
-sizes = [150, 500, 1000, 2000, 5000, 10000]
+sizes = [150, 500, 1000, 1500, 2000, 2500]
 
 
 def get_path(n: int, idx: int):
