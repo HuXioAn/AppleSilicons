@@ -1,4 +1,4 @@
 .idea/
 cmake-build-*/
-gen/__pycache__/
-gen/venv/
+control/__pycache__/
+control/venv/
