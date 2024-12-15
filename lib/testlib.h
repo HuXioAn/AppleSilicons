@@ -9,6 +9,9 @@
 #include <string>
 
 #define INDEX(N,R,C) (N*R + C)
+#ifndef MATRIX_N
+#define MATRIX_N (-1)
+#endif
 
 constexpr unsigned int APPLE_M1_PAGE_SIZE = 16384;
 
@@ -37,23 +40,32 @@ void internal_load_matrix(const std::string& pathPrefix, unsigned short n, unsig
 
 template<typename MatMul>
 void test_suite(MatMul consumer, const std::string &pathPrefix = "../data/") {
-    // { 150u, 500u, 1000u, 2000u, 5000u, 10000u }
-    for (unsigned int n : { 2500u }) {
-        // Create all the arrays.
-        unsigned int memory_length;
-        float* left = make_page_aligned_matrix(n, memory_length);
-        float* right = make_page_aligned_matrix(n, memory_length);
-        float* out = make_page_aligned_matrix(n, memory_length);
-        // Load them.
-        internal_load_matrix(pathPrefix, n, 0, left);
-        internal_load_matrix(pathPrefix, n, 1, right);
-        // Perform matrix multiplication.
-        auto before = std::chrono::high_resolution_clock::now();
-        consumer(n, memory_length, left, right, out);
-        auto after = std::chrono::high_resolution_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before);
-        std::cout << n << ": check " << out[INDEX(n, 0, 0)] << " took " << elapsed.count() << "ns" << std::endl;
+    unsigned int n = MATRIX_N;
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "Simplify"
+    if (n == -1) {
+        std::cerr << "Matrix size not set up properly at compile time. Using default of 150." << std::endl;
+        n = 150u;
     }
+#pragma clang diagnostic pop
+    // Create all the arrays.
+    unsigned int memory_length;
+    float* left = make_page_aligned_matrix(n, memory_length);
+    float* right = make_page_aligned_matrix(n, memory_length);
+    float* out = make_page_aligned_matrix(n, memory_length);
+    // Load them.
+    internal_load_matrix(pathPrefix, n, 0, left);
+    internal_load_matrix(pathPrefix, n, 1, right);
+    // Perform matrix multiplication.
+    auto before = std::chrono::high_resolution_clock::now();
+    consumer(n, memory_length, left, right, out);
+    auto after = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before);
+#ifndef NDEBUG
+    std::cout << n << ": check " << out[INDEX(n, 0, 0)] << " took " << elapsed.count() << "ns" << std::endl;
+#else
+    std::cout << elapsed.count() << std::endl;
+#endif
 }
 
 #endif

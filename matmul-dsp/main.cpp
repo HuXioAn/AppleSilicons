@@ -1,4 +1,4 @@
-#include <vecLib/vDSP.h>
+#include <Accelerate/Accelerate.h>
 #include "testlib.h"
 
 void dsp(unsigned int nu, [[maybe_unused]] unsigned int memory_length, const float* left, const float* right, float* out) {

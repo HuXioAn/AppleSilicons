@@ -4,6 +4,15 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_SOURCE_DIR}/cmake")
 
+if (DEFINED MATRIX_N)
+    # Pass it to the compiler as a preprocessor definition
+    add_definitions(-DMATRIX_N=${MATRIX_N})
+endif ()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_definitions(NDEBUG)
+endif ()
+
 include_directories(lib/)
 
 set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
@@ -23,10 +32,10 @@ add_executable(omp matmul-cpu-omp/main.cpp)
 target_link_libraries(omp PRIVATE OpenMP::OpenMP_CXX)
 
 add_executable(blas matmul-blas/main.cpp)
-target_link_libraries(blas "-framework Accelerate")
+target_link_libraries(blas PRIVATE "-framework Accelerate")
 
 add_executable(dsp matmul-dsp/main.cpp)
-target_link_libraries(dsp "-framework Accelerate")
+target_link_libraries(dsp PRIVATE "-framework Accelerate")
 
 include(MetalShaderSupport)
 enable_language(Metal)
