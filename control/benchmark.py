@@ -1,6 +1,11 @@
 import os
 import subprocess
 import config
+import signal
+import time
+import dotenv
+
+dotenv.load_dotenv()
 
 # The path of the binaries for cmake and make.
 CMAKE_PATH = os.environ["CMAKE_PATH"]
@@ -10,6 +15,10 @@ PROJECT_ROOT = "../"
 BIN_ROOT = PROJECT_ROOT + "cmake-build-release"
 OUT_ROOT = PROJECT_ROOT + "out"
 TRIALS = 5
+SAMPLE_RATE = 5
+
+if os.geteuid() != 0:
+    raise RuntimeError("script must be run as root, powermetrics requires it")
 
 
 class Implementation:
@@ -37,8 +46,24 @@ def compile_binaries(mat_size):
     os.system(f"\"{MAKE_PATH}\"")
 
 
+def start_monitor(output_file):
+    command = [
+        "powermetrics",
+        "-i", str(SAMPLE_RATE),  # sample every X millisecond
+        "-a", "0",  # do not aggregate
+        "-s", "cpu_power,gpu_power",
+        "-o", output_file
+    ]
+    return subprocess.Popen(command)
+
+
+def stop_monitor(mon):
+    mon.send_signal(signal.SIGINT)
+    mon.wait()
+
+
 def run():
-    for matrix_size in config.sizes:
+    for _, matrix_size in enumerate(config.sizes):
         print("Matrix size:", matrix_size)
         compile_binaries(matrix_size)
         for i in range(1, TRIALS + 1):
@@ -48,8 +73,11 @@ def run():
                 cwd_dir = os.path.abspath(BIN_ROOT + "/" + impl.launch_dir)
                 log_dir = trial_dir + "/" + impl.launch_bin
                 os.system(f"mkdir -p {log_dir}")
-                timing_dir = log_dir + "/timing.txt"
-                with open(timing_dir, "w") as timing:
+                timing_file = log_dir + "/timing.txt"
+                power_file = os.path.abspath(log_dir + "/power.txt")
+                mon = start_monitor(power_file)
+                time.sleep(0.5)
+                with open(timing_file, "w") as timing:
                     subprocess.run(
                         [os.path.abspath(cwd_dir + "/" + impl.launch_bin)],
                         cwd=cwd_dir,
@@ -57,6 +85,7 @@ def run():
                         stderr=subprocess.STDOUT,
                         check=True
                     )
+                    stop_monitor(mon)
 
 
 if __name__ == "__main__":
