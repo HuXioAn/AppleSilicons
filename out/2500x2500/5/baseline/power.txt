@@ -1,0 +1,66 @@
+Machine model: MacBookAir10,1
+OS version: 21G651
+Boot arguments: 
+Boot time: Sun Dec 22 20:17:52 2024
+
+
+
+*** Sampled system activity (Wed Jan  1 19:27:54 2025 +0100) (28936.97ms elapsed) ***
+
+
+**** Processor usage ****
+
+E-Cluster Power: 3 mW
+E-Cluster HW active frequency: 973 MHz
+E-Cluster HW active residency:   4.70% (600 MHz:   0% 972 MHz: 100% 1332 MHz: .04% 1704 MHz:   0% 2064 MHz: .07%)
+E-Cluster idle residency:  95.30%
+E-Cluster instructions retired: 1.0034e+09
+E-Cluster instructions per clock: 0.883005
+CPU 0 frequency: 976 MHz
+CPU 0 idle residency:  98.07%
+CPU 0 active residency:   1.93% (600 MHz:   0% 972 MHz: 1.9% 1332 MHz: .01% 1704 MHz:   0% 2064 MHz: .00%)
+CPU 1 frequency: 977 MHz
+CPU 1 idle residency:  97.42%
+CPU 1 active residency:   2.58% (600 MHz:   0% 972 MHz: 2.6% 1332 MHz: .01% 1704 MHz:   0% 2064 MHz: .01%)
+CPU 2 frequency: 996 MHz
+CPU 2 idle residency:  99.39%
+CPU 2 active residency:   0.61% (600 MHz:   0% 972 MHz: .57% 1332 MHz: .03% 1704 MHz:   0% 2064 MHz: .00%)
+CPU 3 frequency: 989 MHz
+CPU 3 idle residency:  99.70%
+CPU 3 active residency:   0.30% (600 MHz:   0% 972 MHz: .29% 1332 MHz: .00% 1704 MHz:   0% 2064 MHz: .00%)
+
+P-Cluster Power: 2232 mW
+P-Cluster HW active frequency: 1898 MHz
+P-Cluster HW active residency:  95.69% (600 MHz: 4.3% 828 MHz:   0% 1056 MHz:   0% 1284 MHz: .03% 1500 MHz: .03% 1728 MHz: .04% 1956 MHz:  96% 2184 MHz:   0% 2388 MHz:   0% 2592 MHz:   0% 2772 MHz:   0% 2988 MHz:   0% 3096 MHz:   0% 3144 MHz:   0% 3204 MHz:   0%)
+P-Cluster idle residency:   4.31%
+P-Cluster instructions retired: 1.56439e+11
+P-Cluster instructions per clock: 2.88894
+CPU 4 frequency: 1956 MHz
+CPU 4 idle residency:   4.31%
+CPU 4 active residency:  95.69% (600 MHz: .00% 828 MHz:   0% 1056 MHz:   0% 1284 MHz: .03% 1500 MHz: .03% 1728 MHz: .04% 1956 MHz:  96% 2184 MHz:   0% 2388 MHz:   0% 2592 MHz:   0% 2772 MHz:   0% 2988 MHz:   0% 3096 MHz:   0% 3144 MHz:   0% 3204 MHz:   0%)
+CPU 5 frequency: 1886 MHz
+CPU 5 idle residency: 100.00%
+CPU 5 active residency:   0.00% (600 MHz: .00% 828 MHz:   0% 1056 MHz:   0% 1284 MHz:   0% 1500 MHz:   0% 1728 MHz:   0% 1956 MHz: .00% 2184 MHz:   0% 2388 MHz:   0% 2592 MHz:   0% 2772 MHz:   0% 2988 MHz:   0% 3096 MHz:   0% 3144 MHz:   0% 3204 MHz:   0%)
+CPU 6 frequency: 1956 MHz
+CPU 6 idle residency: 100.00%
+CPU 6 active residency:   0.00% (600 MHz:   0% 828 MHz:   0% 1056 MHz:   0% 1284 MHz:   0% 1500 MHz:   0% 1728 MHz:   0% 1956 MHz: .00% 2184 MHz:   0% 2388 MHz:   0% 2592 MHz:   0% 2772 MHz:   0% 2988 MHz:   0% 3096 MHz:   0% 3144 MHz:   0% 3204 MHz:   0%)
+CPU 7 frequency: 1956 MHz
+CPU 7 idle residency: 100.00%
+CPU 7 active residency:   0.00% (600 MHz:   0% 828 MHz:   0% 1056 MHz:   0% 1284 MHz:   0% 1500 MHz:   0% 1728 MHz:   0% 1956 MHz: .00% 2184 MHz:   0% 2388 MHz:   0% 2592 MHz:   0% 2772 MHz:   0% 2988 MHz:   0% 3096 MHz:   0% 3144 MHz:   0% 3204 MHz:   0%)
+
+System instructions retired: 1.57443e+11
+System instructions per clock: 2.84771
+ANE Power: 0 mW
+DRAM Power: 147 mW
+CPU Power: 2235 mW
+GPU Power: 0 mW
+Package Power: 2442 mW
+
+**** GPU usage ****
+
+GPU active frequency: 0 MHz
+GPU active residency:   0.02% (396 MHz: .02% 528 MHz:   0% 720 MHz:   0% 924 MHz:   0% 1128 MHz:   0% 1278 MHz:   0%)
+GPU requested frequency: (396 MHz:   0% 528 MHz:   0% 720 MHz:   0% 924 MHz:   0% 1128 MHz:   0% 1278 MHz: .02%)
+GPU idle residency:  99.98%
+GPU Power: 0 mW
+
