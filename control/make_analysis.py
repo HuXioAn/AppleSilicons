@@ -128,9 +128,49 @@ def plot_granular(matrix_size):
     plt.savefig(RESULTS_FOLDER + f"/granular-{matrix_size}x{matrix_size}.png")
 
 
+def num_flop(matrix_size):
+    return matrix_size * matrix_size * ((2 * matrix_size) - 1)
+
+
+def plot_flop_values():
+    raw = [[[get_powers(matrix_size, i, implementation) for i in range(1, 6)]
+            for matrix_size in config.sizes] for implementation in implementations]
+    watts = np.sum(np.array(raw), axis=3)
+    flops = np.array([num_flop(matrix_size) for matrix_size in config.sizes])[:, np.newaxis]
+    flops_per_watt = flops / watts
+    return np.mean(flops_per_watt, axis=2), np.std(flops_per_watt, axis=2)
+
+
+def plot_flop():
+    plt.cla()
+    labels = ["Naive", "BLAS", "vDSP", "Block Multiplication", "Naive Shader", "Cutlass-Style Shader", "MPS"]
+    components = [f"{n}x{n}" for n in config.sizes]
+    y, y_err = plot_flop_values()
+
+    num_categories = len(labels)
+    num_components = len(components)
+    bar_width = 0.12
+    group_spacing = 0.6
+    component_spacing = bar_width
+    x_base = np.arange(num_categories) * (num_components * bar_width + group_spacing)
+    x_positions = [x_base + i * component_spacing for i in range(num_components)]
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for i, component in enumerate(components):
+        ax.bar(x_positions[i], y[:, i], width=bar_width, label=component)
+
+    ax.set_xlabel("Implementations")
+    ax.set_ylabel("Floating point operations per mW")
+    ax.set_title("FLOPS per mW")
+    ax.set_xticks(x_base + (num_components - 1) * bar_width / 2)
+    ax.set_xticklabels(labels)
+    ax.legend()
+    plt.savefig(RESULTS_FOLDER + "/efficiency.png")
+
+
 if __name__ == "__main__":
     setup()
     plot_timing()
     plot_power()
     for ms in config.sizes:
         plot_granular(ms)
+    plot_flop()
