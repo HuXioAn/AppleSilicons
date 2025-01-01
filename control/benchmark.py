@@ -38,7 +38,8 @@ implementations = [
 ]
 
 
-def compile_binaries(mat_size):
+def compile_binaries(mat_size, reset_dir_path):
+    os.chdir(reset_dir_path)
     os.system(f"rm -rf {BIN_ROOT} || true")
     os.system(f"mkdir -p {BIN_ROOT}")
     os.chdir(BIN_ROOT)
@@ -66,9 +67,10 @@ def stop_monitor(mon):
 
 
 def run():
+    checkpoint_path = os.getcwd()
     for _, matrix_size in enumerate(config.sizes):
         print("Matrix size:", matrix_size)
-        compile_binaries(matrix_size)
+        compile_binaries(matrix_size, checkpoint_path)
         for i in range(1, TRIALS + 1):
             trial_dir = os.path.abspath(OUT_ROOT + f"/{matrix_size}x{matrix_size}/" + str(i))
             os.system(f"mkdir -p {trial_dir}")
