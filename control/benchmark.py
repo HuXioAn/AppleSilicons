@@ -49,15 +49,18 @@ def compile_binaries(mat_size):
 def start_monitor(output_file):
     command = [
         "powermetrics",
-        "-i", str(SAMPLE_RATE),  # sample every X millisecond
+        "-i", "0",  # only sample when process notifies
         "-a", "0",  # do not aggregate
         "-s", "cpu_power,gpu_power",
         "-o", output_file
     ]
-    return subprocess.Popen(command)
+    proc = subprocess.Popen(command)
+    time.sleep(2)  # wait for the program to be running
+    return proc
 
 
 def stop_monitor(mon):
+    mon.send_signal(signal.SIGIO)  # just in case, flush to file
     mon.send_signal(signal.SIGINT)
     mon.wait()
 
@@ -76,11 +79,14 @@ def run():
                 timing_file = log_dir + "/timing.txt"
                 power_file = os.path.abspath(log_dir + "/power.txt")
                 mon = start_monitor(power_file)
-                time.sleep(0.5)
+                mon_pid = mon.pid
+                work_env = os.environ.copy()
+                work_env["POWER_MONITOR"] = str(mon_pid)
                 with open(timing_file, "w") as timing:
                     subprocess.run(
                         [os.path.abspath(cwd_dir + "/" + impl.launch_bin)],
                         cwd=cwd_dir,
+                        env=work_env,
                         stdout=timing,
                         stderr=subprocess.STDOUT,
                         check=True
