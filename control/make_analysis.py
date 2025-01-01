@@ -1,5 +1,7 @@
 import os
-import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import config
 
 RESULTS_FOLDER = "../results"
 RAW_DATA_FOLDER = "../out"
@@ -12,29 +14,123 @@ def setup():
 
 
 def get_powers(matrix_size, trial, implementation):
-    eff, pwr, gpu = [], [], []
+    eff, pwr, gpu = None, None, None
 
     extract = lambda row: int(row.split(" ")[2])
     with open(RAW_DATA_FOLDER + f"/{matrix_size}x{matrix_size}/{trial}/{implementation}/power.txt", "r") as f:
         for line in f.readlines():
             if line.startswith("E-Cluster Power"):
-                eff.append(extract(line))
+                eff = int(extract(line))
             elif line.startswith("P-Cluster Power"):
-                pwr.append(extract(line))
+                pwr = int(extract(line))
             elif line.startswith("GPU Power"):
-                gpu.append(extract(line))
-    print(eff, pwr, gpu)
+                gpu = int(extract(line))
+    return eff, pwr, gpu
 
 
-def analyze():
-    get_powers(500, 1, "baseline")
+def get_powers_data(implementation):
+    raw = [[get_powers(size, trial, implementation) for trial in range(1, 6)] for size in config.sizes]
+    processed = np.array(raw)
+    return processed
 
 
-def plot():
-    pass
+def get_timing(matrix_size, trial, implementation):
+    with open(RAW_DATA_FOLDER + f"/{matrix_size}x{matrix_size}/{trial}/{implementation}/timing.txt", "r") as f:
+        return int(f.read()) / 1_000_000  # time in ms
+
+
+def get_timing_data(implementation):
+    raw = [[get_timing(size, trial, implementation) for trial in range(1, 6)] for size in config.sizes]
+    processed = np.array(raw)
+    return np.mean(processed, axis=1), np.std(processed, axis=1)
+
+
+def plot_timing_implementation(implementation, label, fmt, color):
+    y, err = get_timing_data(implementation)
+    plt.errorbar(config.sizes, y, yerr=err, fmt=fmt, color=color, label=label)
+
+
+def plot_timing():
+    plt.cla()
+    plt.figure(figsize=(7, 9))
+    plot_timing_implementation("baseline", "Naive", "o", "C0")
+    plot_timing_implementation("blas", "BLAS", "v", "C1")
+    plot_timing_implementation("dsp", "vDSP", "^", "C2")
+    plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
+    plot_timing_implementation("gpu_baseline", "Naive Shader", "D", "C4")
+    plot_timing_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
+    plot_timing_implementation("gpu_mps", "MPS", "*", "C6")
+    plt.xlabel("Matrix size")
+    plt.ylabel("Average multiplication time [ms] (log scale)")
+    plt.yscale("log")
+    plt.title("Matrix Size vs. Average Multiplication Time")
+    plt.legend()
+    plt.savefig(RESULTS_FOLDER + "/timing.png")
+
+
+def plot_power_implementation(implementation, label, fmt, color):
+    all_data = np.sum(get_powers_data(implementation), axis=2)
+    y = np.mean(all_data, axis=1)
+    err = np.std(all_data, axis=1)
+    plt.errorbar(config.sizes, y, yerr=err, fmt=fmt, color=color, label=label)
+
+
+def plot_power():
+    plt.cla()
+    plot_power_implementation("baseline", "Naive", "o", "C0")
+    plot_power_implementation("blas", "BLAS", "v", "C1")
+    plot_power_implementation("dsp", "vDSP", "^", "C2")
+    plot_power_implementation("omp", "Block Multiplication", "s", "C3")
+    plot_power_implementation("gpu_baseline", "Naive Shader", "D", "C4")
+    plot_power_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
+    plot_power_implementation("gpu_mps", "MPS", "*", "C6")
+    plt.xlabel("Matrix size")
+    plt.ylabel("Average power dissipation (mW)")
+    plt.title("Matrix Size vs. Average Power Dissipation")
+    plt.legend()
+    plt.savefig(RESULTS_FOLDER + "/power.png")
+
+
+def plot_granular_values(matrix_size):
+    raw = [[get_powers(matrix_size, i, implementation) for i in range(1, 6)] for implementation in implementations]
+    processed = np.array(raw)
+    return processed[:, :, 0], processed[:, :, 1], processed[:, :, 2]
+
+
+def plot_granular(matrix_size):
+    plt.cla()
+    labels = ["Naive", "BLAS", "vDSP", "Block Multiplication", "Naive Shader", "Cutlass-Style Shader", "MPS"]
+    eff, pwr, gpu = plot_granular_values(matrix_size)
+    eff_y, pwr_y, gpu_y = np.mean(eff, axis=1), np.mean(pwr, axis=1), np.mean(gpu, axis=1)
+    eff_err, pwr_err, gpu_err = np.std(eff, axis=1), np.std(pwr, axis=1), np.std(gpu, axis=1)
+    eff_err_lower = np.clip(eff_err, None, eff_y)
+    pwr_err_lower = np.clip(pwr_err, None, pwr_y)
+    gpu_err_lower = np.clip(gpu_err, None, gpu_y)
+
+    n_categories = len(implementations)
+    group_height = 0.6
+    bar_height = group_height / 3
+    category_spacing = 0.4
+    y_positions = np.arange(n_categories) * (group_height + category_spacing)
+    y_positions_eff = y_positions - bar_height
+    y_positions_pwr = y_positions
+    y_positions_gpu = y_positions + bar_height
+
+    plt.figure(figsize=(13, 6))
+    plt.barh(y_positions_eff, eff_y, xerr=[eff_err_lower, eff_err], height=bar_height, label="Efficiency Cores")
+    plt.barh(y_positions_pwr, pwr_y, xerr=[pwr_err_lower, pwr_err], height=bar_height, label="Power Cores")
+    plt.barh(y_positions_gpu, gpu_y, xerr=[gpu_err_lower, gpu_err], height=bar_height, label="GPU")
+    plt.xlabel("Average power dissipation per component (mW)")
+    plt.ylabel("Implementation")
+    plt.yticks(y_positions, labels)
+    plt.title(f"[{matrix_size}x{matrix_size}] Power Dissipation Per Component")
+    plt.legend()
+    plt.savefig(RESULTS_FOLDER + f"/granular-{matrix_size}x{matrix_size}.png")
 
 
 if __name__ == "__main__":
     setup()
-    analyze()
-    plot()
+    plot_timing()
+    plot_power()
+    for ms in config.sizes:
+        plot_granular(ms)
