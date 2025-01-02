@@ -6,7 +6,8 @@ import config
 RESULTS_FOLDER = "../results"
 RAW_DATA_FOLDER = "../out"
 
-implementations = ["baseline", "omp", "blas", "dsp", "gpu_baseline", "gpu_mps", "gpu_nv"]
+implementations = ["baseline", "omp", "blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"]
+labels = ["Naive", "Block Multiplication", "BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"]
 
 
 def setup():
@@ -48,11 +49,13 @@ def get_timing_data(implementation):
 def plot_timing_implementation(implementation, label, fmt, color):
     y, err = get_timing_data(implementation)
     plt.errorbar(config.sizes, y, yerr=err, fmt=fmt, color=color, label=label)
+    print(label, "&", " & ".join([f"{m:.2f} \\pm {s:.2f}" for m, s in zip(y, err)]), "\\\\")
 
 
 def plot_timing():
     plt.cla()
     plt.figure(figsize=(7, 9))
+    print("TIMING [ms]")
     plot_timing_implementation("baseline", "Naive", "o", "C0")
     plot_timing_implementation("blas", "BLAS", "v", "C1")
     plot_timing_implementation("dsp", "vDSP", "^", "C2")
@@ -61,10 +64,10 @@ def plot_timing():
     plot_timing_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
     plot_timing_implementation("gpu_mps", "MPS", "*", "C6")
     plt.xlabel("Matrix size")
-    plt.ylabel("Average multiplication time [ms] (log scale)")
+    plt.xticks(config.sizes)
+    plt.ylabel("Average multiplication time [ms], log scale, lower is better")
     plt.yscale("log")
-    plt.title("Matrix Size vs. Average Multiplication Time")
-    plt.legend()
+    plt.legend(title="Implementation")
     plt.savefig(RESULTS_FOLDER + "/timing.png")
 
 
@@ -73,10 +76,12 @@ def plot_power_implementation(implementation, label, fmt, color):
     y = np.mean(all_data, axis=1)
     err = np.std(all_data, axis=1)
     plt.errorbar(config.sizes, y, yerr=err, fmt=fmt, color=color, label=label)
+    print(label, "&", " & ".join([f"{m:.2f} & {s:.2f}" for m, s in zip(y, err)]), "\\\\")
 
 
 def plot_power():
     plt.cla()
+    print("\n\nPOWER [mW]")
     plot_power_implementation("baseline", "Naive", "o", "C0")
     plot_power_implementation("blas", "BLAS", "v", "C1")
     plot_power_implementation("dsp", "vDSP", "^", "C2")
@@ -85,9 +90,9 @@ def plot_power():
     plot_power_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
     plot_power_implementation("gpu_mps", "MPS", "*", "C6")
     plt.xlabel("Matrix size")
-    plt.ylabel("Average power dissipation (mW)")
-    plt.title("Matrix Size vs. Average Power Dissipation")
-    plt.legend()
+    plt.xticks(config.sizes)
+    plt.ylabel("Average power dissipation [mW], lower is better")
+    plt.legend(title="Implementation")
     plt.savefig(RESULTS_FOLDER + "/power.png")
 
 
@@ -99,32 +104,40 @@ def plot_granular_values(matrix_size):
 
 def plot_granular(matrix_size):
     plt.cla()
-    labels = ["Naive", "BLAS", "vDSP", "Block Multiplication", "Naive Shader", "Cutlass-Style Shader", "MPS"]
+    print("\n\nGRANULAR [mW]", matrix_size)
     eff, pwr, gpu = plot_granular_values(matrix_size)
     eff_y, pwr_y, gpu_y = np.mean(eff, axis=1), np.mean(pwr, axis=1), np.mean(gpu, axis=1)
     eff_err, pwr_err, gpu_err = np.std(eff, axis=1), np.std(pwr, axis=1), np.std(gpu, axis=1)
     eff_err_lower = np.clip(eff_err, None, eff_y)
     pwr_err_lower = np.clip(pwr_err, None, pwr_y)
     gpu_err_lower = np.clip(gpu_err, None, gpu_y)
+    for i, implementation in enumerate(implementations):
+        print(labels[i], "&",
+              "%.2f" % eff_y[i], "&", "%.2f" % eff_err[i], "&",
+              "%.2f" % pwr_y[i], "&", "%.2f" % pwr_err[i], "&",
+              "%.2f" % gpu_y[i], "&", "%.2f" % gpu_err[i], "\\\\")
 
     n_categories = len(implementations)
     group_height = 0.6
     bar_height = group_height / 3
     category_spacing = 0.4
     y_positions = np.arange(n_categories) * (group_height + category_spacing)
-    y_positions_eff = y_positions - bar_height
+    y_positions = y_positions[::-1]
+    y_positions_eff = y_positions + bar_height
     y_positions_pwr = y_positions
-    y_positions_gpu = y_positions + bar_height
+    y_positions_gpu = y_positions - bar_height
 
     plt.figure(figsize=(13, 6))
-    plt.barh(y_positions_eff, eff_y, xerr=[eff_err_lower, eff_err], height=bar_height, label="Efficiency Cores")
-    plt.barh(y_positions_pwr, pwr_y, xerr=[pwr_err_lower, pwr_err], height=bar_height, label="Power Cores")
-    plt.barh(y_positions_gpu, gpu_y, xerr=[gpu_err_lower, gpu_err], height=bar_height, label="GPU")
-    plt.xlabel("Average power dissipation per component (mW)")
+    plt.barh(y_positions_eff, eff_y, xerr=[eff_err_lower, eff_err], height=bar_height,
+             label="Efficiency Cores", hatch=None)
+    plt.barh(y_positions_pwr, pwr_y, xerr=[pwr_err_lower, pwr_err], height=bar_height,
+             label="Power Cores", hatch="/")
+    plt.barh(y_positions_gpu, gpu_y, xerr=[gpu_err_lower, gpu_err], height=bar_height,
+             label="GPU", hatch="|")
+    plt.xlabel("Average power dissipation per component [mW], lower is better")
     plt.ylabel("Implementation")
     plt.yticks(y_positions, labels)
-    plt.title(f"[{matrix_size}x{matrix_size}] Power Dissipation Per Component")
-    plt.legend()
+    plt.legend(title="Components", loc="lower right")
     plt.savefig(RESULTS_FOLDER + f"/granular-{matrix_size}x{matrix_size}.png")
 
 
@@ -135,16 +148,17 @@ def num_flop(matrix_size):
 def plot_flop_values():
     raw = [[[get_powers(matrix_size, i, implementation) for i in range(1, 6)]
             for matrix_size in config.sizes] for implementation in implementations]
-    watts = np.sum(np.array(raw), axis=3)
-    flops = np.array([num_flop(matrix_size) for matrix_size in config.sizes])[:, np.newaxis]
+    watts = np.sum(np.array(raw), axis=3) / 1_000  # conversion: milli watt to watt
+    flops = np.array([num_flop(matrix_size) for matrix_size in config.sizes])[:, np.newaxis] / 1_000_000_000
     flops_per_watt = flops / watts
     return np.mean(flops_per_watt, axis=2), np.std(flops_per_watt, axis=2)
 
 
 def plot_flop():
     plt.cla()
-    labels = ["Naive", "BLAS", "vDSP", "Block Multiplication", "Naive Shader", "Cutlass-Style Shader", "MPS"]
+    print("\n\nGFLOP per W")
     components = [f"{n}x{n}" for n in config.sizes]
+    formats = [None, ".", "*", "x", "-", "/"]
     y, y_err = plot_flop_values()
 
     num_categories = len(labels)
@@ -156,15 +170,27 @@ def plot_flop():
     x_positions = [x_base + i * component_spacing for i in range(num_components)]
     fig, ax = plt.subplots(figsize=(12, 6))
     for i, component in enumerate(components):
-        ax.bar(x_positions[i], y[:, i], width=bar_width, label=component)
+        ax.bar(x_positions[i], y[:, i], yerr=y_err[:, i], width=bar_width, label=component, hatch=formats[i])
+        print(labels[i], "&", " & ".join([f"{m:.2f} \\pm {s:.2f}" for m, s in zip(y[:, i], y_err[:, i])]))
 
     ax.set_xlabel("Implementations")
-    ax.set_ylabel("Floating point operations per mW")
-    ax.set_title("FLOPS per mW")
+    ax.set_ylabel("GFLOP per W")
     ax.set_xticks(x_base + (num_components - 1) * bar_width / 2)
     ax.set_xticklabels(labels)
-    ax.legend()
+    ax.legend(title="Matrix Size", loc="upper left")
     plt.savefig(RESULTS_FOLDER + "/efficiency.png")
+
+
+def calculate_flops():
+    print("\n\nGFLOPS")
+    for i, implementation in enumerate(implementations):
+        raw = [[get_timing(size, trial, implementation) for trial in range(1, 6)] for size in config.sizes]
+        times = np.array(raw) / 1_000  # conversion: seconds
+        flop = np.array([num_flop(matrix_size) for matrix_size in config.sizes]) / 1_000_000_000  # conversion: giga
+        flops = flop[:, np.newaxis] / times
+        mean = np.mean(flops, axis=1)
+        std = np.std(flops, axis=1)
+        print(labels[i], "&", " & ".join([f"{m:.2f} \\pm {s:.2f}" for m, s in zip(mean, std)]), "\\\\")
 
 
 if __name__ == "__main__":
@@ -174,3 +200,4 @@ if __name__ == "__main__":
     for ms in config.sizes:
         plot_granular(ms)
     plot_flop()
+    calculate_flops()
