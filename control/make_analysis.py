@@ -49,7 +49,7 @@ def get_timing_data(implementation):
 def plot_timing_implementation(implementation, label, fmt, color):
     y, err = get_timing_data(implementation)
     plt.errorbar(config.sizes, y, yerr=err, fmt=fmt, color=color, label=label)
-    print(label, "&", " & ".join([f"{m:.2f} \\pm {s:.2f}" for m, s in zip(y, err)]), "\\\\")
+    print(label, "&", " & ".join([f"{m:.2f} $\\pm$ {s:.2f}" for m, s in zip(y, err)]), "\\\\")
 
 
 def plot_timing():
@@ -57,9 +57,9 @@ def plot_timing():
     plt.figure(figsize=(7, 9))
     print("TIMING [ms]")
     plot_timing_implementation("baseline", "Naive", "o", "C0")
+    plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
     plot_timing_implementation("blas", "BLAS", "v", "C1")
     plot_timing_implementation("dsp", "vDSP", "^", "C2")
-    plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
     plot_timing_implementation("gpu_baseline", "Naive Shader", "D", "C4")
     plot_timing_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
     plot_timing_implementation("gpu_mps", "MPS", "*", "C6")
@@ -83,9 +83,9 @@ def plot_power():
     plt.cla()
     print("\n\nPOWER [mW]")
     plot_power_implementation("baseline", "Naive", "o", "C0")
+    plot_power_implementation("omp", "Block Multiplication", "s", "C3")
     plot_power_implementation("blas", "BLAS", "v", "C1")
     plot_power_implementation("dsp", "vDSP", "^", "C2")
-    plot_power_implementation("omp", "Block Multiplication", "s", "C3")
     plot_power_implementation("gpu_baseline", "Naive Shader", "D", "C4")
     plot_power_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
     plot_power_implementation("gpu_mps", "MPS", "*", "C6")
@@ -171,7 +171,8 @@ def plot_flop():
     fig, ax = plt.subplots(figsize=(12, 6))
     for i, component in enumerate(components):
         ax.bar(x_positions[i], y[:, i], yerr=y_err[:, i], width=bar_width, label=component, hatch=formats[i])
-        print(labels[i], "&", " & ".join([f"{m:.2f} \\pm {s:.2f}" for m, s in zip(y[:, i], y_err[:, i])]))
+    for i in range(len(implementations)):
+        print(labels[i], "&", " & ".join([f"{m:.2f} $\\pm$ {s:.2f}" for m, s in zip(y[i, :], y_err[i, :])]), "\\\\")
 
     ax.set_xlabel("Implementations")
     ax.set_ylabel("GFLOP per W")
@@ -190,7 +191,7 @@ def calculate_flops():
         flops = flop[:, np.newaxis] / times
         mean = np.mean(flops, axis=1)
         std = np.std(flops, axis=1)
-        print(labels[i], "&", " & ".join([f"{m:.2f} \\pm {s:.2f}" for m, s in zip(mean, std)]), "\\\\")
+        print(labels[i], "&", " & ".join([f"{m:.2f} $\\pm$ {s:.2f}" for m, s in zip(mean, std)]), "\\\\")
 
 
 if __name__ == "__main__":
