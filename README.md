@@ -16,6 +16,7 @@ This project requires Xcode, C++20 and `libomp`. The following software and vers
 | CMake | 3.28 | |
 | Make | 3.81 | |
 | Xcode | 14.0.1 | via Apple Developer website |
+| Clang | 14.0.0 | via Xcode, **not** Homebrew |
 | Metal | 31001.643 | bundled with Xcode |
 | libomp | 19.1.4 | `brew install libomp` |
 
