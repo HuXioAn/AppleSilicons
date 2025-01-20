@@ -33,6 +33,30 @@ For GPU-based builds, cwd into `build/XXX.app/Contents/MacOS` (where `XXX` is th
 
 ## Benchmarking
 
+The Benchmarking python scripts handle the building, execution and results according to the list in `config.py`.
+
+``` shell
+
+mkdir data
+mkdir out
+mkdir results
+
+cd control 
+python3 -m venv .venv
+source ./.venv/bin/activate
+# In virtual python evnironment now
+
+pip install -r ./requirements.txt
+
+python ./make_matrices.py &&  ls ../data
+
+sudo python ./benchmark.py  # may take longer time
+
+ls ../out
+ls ../results
+
+```
+
 The benchmarking can be performed automatically using the `./control` suite.
 This test suite uses Python, a virtual environment with Python 3.9.6 and the packages in `./control/requirements.txt` works.
 
