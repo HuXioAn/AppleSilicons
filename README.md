@@ -20,16 +20,6 @@ This project requires Xcode, C++20 and `libomp`. The following software and vers
 | Metal | 31001.643 | bundled with Xcode |
 | libomp | 19.1.4 | `brew install libomp` |
 
-## Compilation
-
-1. `mkdir build && cd build/`
-2. `cmake -DMATRIX_N=<N> -DCMAKE_BUILD_TYPE=Release ..`, replace `<N>` with a number such that the files `./data/matrix-<N>-0.float32` and `./data/matrix-<N>-1.float32` exist
-3. `make`
-
-## Execution
-
-For CPU-based builds, cwd into `build` and execute the binary.
-For GPU-based builds, cwd into `build/XXX.app/Contents/MacOS` (where `XXX` is the name of an executable) and execute the binary.
 
 ## Benchmarking
 
@@ -51,14 +41,21 @@ pip install -r ./requirements.txt
 python ./make_matrices.py &&  ls ../data
 
 sudo python ./benchmark.py  # may take longer time
-
 ls ../out
+
+python ./make_analysis.py
 ls ../results
 
 ```
 
 The benchmarking can be performed automatically using the `./control` suite.
 This test suite uses Python, a virtual environment with Python 3.9.6 and the packages in `./control/requirements.txt` works.
+
+If CMAKE can not find METALC, please try:
+
+``` shell
+sudo bash -c "export METALC="/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/metal" && python ./benchmark.py"
+```
 
 ### Running the Suite
 
@@ -71,3 +68,17 @@ Superuser privileges are **required** as `powermetrics` requires them.
 Enter the virtual environment, cwd into `./control` and run `python3 make_analysis.py`.
 This will create graphs inside the `./results` directory.
 LaTeX tabular data will also be printed to stdout.
+
+
+## Manual Compilation
+
+Please generate the matrices data according to **Benchmarking** section above.
+
+1. `mkdir build && cd build/`
+2. `cmake -DMATRIX_N=<N> -DCMAKE_BUILD_TYPE=Release ..`, replace `<N>` with a number such that the files `./data/matrix-<N>-0.float32` and `./data/matrix-<N>-1.float32` exist
+3. `make`
+
+## Manual Execution
+
+For CPU-based builds, cwd into `build` and execute the binary.
+For GPU-based builds, cwd into `build/XXX.app/Contents/MacOS` (where `XXX` is the name of an executable) and execute the binary.

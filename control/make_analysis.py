@@ -15,18 +15,18 @@ def setup():
 
 
 def get_powers(matrix_size, trial, implementation):
-    eff, pwr, gpu = None, None, None
+    cpu, pwr, gpu = None, 0, None
 
     extract = lambda row: int(row.split(" ")[2])
     with open(RAW_DATA_FOLDER + f"/{matrix_size}x{matrix_size}/{trial}/{implementation}/power.txt", "r") as f:
         for line in f.readlines():
-            if line.startswith("E-Cluster Power"):
-                eff = int(extract(line))
-            elif line.startswith("P-Cluster Power"):
-                pwr = int(extract(line))
+            if line.startswith("CPU Power"):
+                cpu = int(extract(line))
+            # elif line.startswith("P-Cluster Power"):
+            #     pwr = int(extract(line))
             elif line.startswith("GPU Power"):
                 gpu = int(extract(line))
-    return eff, pwr, gpu
+    return cpu, pwr, gpu
 
 
 def get_powers_data(implementation):
@@ -105,16 +105,14 @@ def plot_granular_values(matrix_size):
 def plot_granular(matrix_size):
     plt.cla()
     print("\n\nGRANULAR [mW]", matrix_size)
-    eff, pwr, gpu = plot_granular_values(matrix_size)
-    eff_y, pwr_y, gpu_y = np.mean(eff, axis=1), np.mean(pwr, axis=1), np.mean(gpu, axis=1)
-    eff_err, pwr_err, gpu_err = np.std(eff, axis=1), np.std(pwr, axis=1), np.std(gpu, axis=1)
-    eff_err_lower = np.clip(eff_err, None, eff_y)
-    pwr_err_lower = np.clip(pwr_err, None, pwr_y)
+    cpu, _, gpu = plot_granular_values(matrix_size)
+    cpu_y, gpu_y = np.mean(cpu, axis=1), np.mean(gpu, axis=1)
+    cpu_err, gpu_err = np.std(cpu, axis=1), np.std(gpu, axis=1)
+    cpu_err_lower = np.clip(cpu_err, None, cpu_y)
     gpu_err_lower = np.clip(gpu_err, None, gpu_y)
     for i, implementation in enumerate(implementations):
         print(labels[i], "&",
-              "%.2f" % eff_y[i], "&", "%.2f" % eff_err[i], "&",
-              "%.2f" % pwr_y[i], "&", "%.2f" % pwr_err[i], "&",
+              "%.2f" % cpu_y[i], "&", "%.2f" % cpu_err[i], "&",
               "%.2f" % gpu_y[i], "&", "%.2f" % gpu_err[i], "\\\\")
 
     n_categories = len(implementations)
@@ -123,15 +121,14 @@ def plot_granular(matrix_size):
     category_spacing = 0.4
     y_positions = np.arange(n_categories) * (group_height + category_spacing)
     y_positions = y_positions[::-1]
-    y_positions_eff = y_positions + bar_height
+    y_positions_eff = y_positions + bar_height / 2
     y_positions_pwr = y_positions
-    y_positions_gpu = y_positions - bar_height
+    y_positions_gpu = y_positions - bar_height / 2
 
     plt.figure(figsize=(13, 6))
-    plt.barh(y_positions_eff, eff_y, xerr=[eff_err_lower, eff_err], height=bar_height,
-             label="Efficiency Cores", hatch=None)
-    plt.barh(y_positions_pwr, pwr_y, xerr=[pwr_err_lower, pwr_err], height=bar_height,
-             label="Power Cores", hatch="/")
+    plt.barh(y_positions_eff, cpu_y, xerr=[cpu_err_lower, cpu_err], height=bar_height,
+             label="CPU", hatch=None)
+    
     plt.barh(y_positions_gpu, gpu_y, xerr=[gpu_err_lower, gpu_err], height=bar_height,
              label="GPU", hatch="|")
     plt.xlabel("Average power dissipation per component [mW], lower is better")
