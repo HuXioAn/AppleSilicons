@@ -6,8 +6,11 @@ import config
 RESULTS_FOLDER = "../results"
 RAW_DATA_FOLDER = "../out"
 
-implementations = ["baseline", "omp", "blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"]
-labels = ["Naive", "Block Multiplication", "BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"]
+implementations = ["baseline", "omp", "blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"] if config.enablePureCPU \
+    else ["blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"]
+
+labels = ["Naive", "Block Multiplication", "BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"] if config.enablePureCPU \
+    else ["BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"]
 
 
 def setup():
@@ -56,8 +59,9 @@ def plot_timing():
     plt.cla()
     plt.figure(figsize=(7, 9))
     print("TIMING [ms]")
-    plot_timing_implementation("baseline", "Naive", "o", "C0")
-    plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
+    if config.enablePureCPU:
+        plot_timing_implementation("baseline", "Naive", "o", "C0")
+        plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
     plot_timing_implementation("blas", "BLAS", "v", "C1")
     plot_timing_implementation("dsp", "vDSP", "^", "C2")
     plot_timing_implementation("gpu_baseline", "Naive Shader", "D", "C4")
@@ -82,8 +86,9 @@ def plot_power_implementation(implementation, label, fmt, color):
 def plot_power():
     plt.cla()
     print("\n\nPOWER [mW]")
-    plot_power_implementation("baseline", "Naive", "o", "C0")
-    plot_power_implementation("omp", "Block Multiplication", "s", "C3")
+    if config.enablePureCPU:
+        plot_power_implementation("baseline", "Naive", "o", "C0")
+        plot_power_implementation("omp", "Block Multiplication", "s", "C3")
     plot_power_implementation("blas", "BLAS", "v", "C1")
     plot_power_implementation("dsp", "vDSP", "^", "C2")
     plot_power_implementation("gpu_baseline", "Naive Shader", "D", "C4")
