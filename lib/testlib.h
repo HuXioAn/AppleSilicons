@@ -10,6 +10,8 @@
 #include <signal.h>
 #include <string>
 
+#include <cassert>
+
 #define INDEX(N,R,C) (N*R + C)
 #ifndef MATRIX_N
 #define MATRIX_N (-1)

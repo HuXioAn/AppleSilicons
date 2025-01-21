@@ -6,8 +6,11 @@ import config
 RESULTS_FOLDER = "../results"
 RAW_DATA_FOLDER = "../out"
 
-implementations = ["baseline", "omp", "blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"]
-labels = ["Naive", "Block Multiplication", "BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"]
+implementations = ["baseline", "omp", "blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"] if config.enablePureCPU \
+    else ["blas", "dsp", "gpu_baseline", "gpu_nv", "gpu_mps"]
+
+labels = ["Naive", "Block Multiplication", "BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"] if config.enablePureCPU \
+    else ["BLAS", "vDSP", "Naive Shader", "Cutlass-Style Shader", "MPS"]
 
 
 def setup():
@@ -15,18 +18,18 @@ def setup():
 
 
 def get_powers(matrix_size, trial, implementation):
-    eff, pwr, gpu = None, None, None
+    cpu, pwr, gpu = None, 0, None
 
     extract = lambda row: int(row.split(" ")[2])
     with open(RAW_DATA_FOLDER + f"/{matrix_size}x{matrix_size}/{trial}/{implementation}/power.txt", "r") as f:
         for line in f.readlines():
-            if line.startswith("E-Cluster Power"):
-                eff = int(extract(line))
-            elif line.startswith("P-Cluster Power"):
-                pwr = int(extract(line))
+            if line.startswith("CPU Power"):
+                cpu = int(extract(line))
+            # elif line.startswith("P-Cluster Power"):
+            #     pwr = int(extract(line))
             elif line.startswith("GPU Power"):
                 gpu = int(extract(line))
-    return eff, pwr, gpu
+    return cpu, pwr, gpu
 
 
 def get_powers_data(implementation):
@@ -56,8 +59,9 @@ def plot_timing():
     plt.cla()
     plt.figure(figsize=(7, 9))
     print("TIMING [ms]")
-    plot_timing_implementation("baseline", "Naive", "o", "C0")
-    plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
+    if config.enablePureCPU:
+        plot_timing_implementation("baseline", "Naive", "o", "C0")
+        plot_timing_implementation("omp", "Block Multiplication", "s", "C3")
     plot_timing_implementation("blas", "BLAS", "v", "C1")
     plot_timing_implementation("dsp", "vDSP", "^", "C2")
     plot_timing_implementation("gpu_baseline", "Naive Shader", "D", "C4")
@@ -82,8 +86,9 @@ def plot_power_implementation(implementation, label, fmt, color):
 def plot_power():
     plt.cla()
     print("\n\nPOWER [mW]")
-    plot_power_implementation("baseline", "Naive", "o", "C0")
-    plot_power_implementation("omp", "Block Multiplication", "s", "C3")
+    if config.enablePureCPU:
+        plot_power_implementation("baseline", "Naive", "o", "C0")
+        plot_power_implementation("omp", "Block Multiplication", "s", "C3")
     plot_power_implementation("blas", "BLAS", "v", "C1")
     plot_power_implementation("dsp", "vDSP", "^", "C2")
     plot_power_implementation("gpu_baseline", "Naive Shader", "D", "C4")
@@ -105,16 +110,14 @@ def plot_granular_values(matrix_size):
 def plot_granular(matrix_size):
     plt.cla()
     print("\n\nGRANULAR [mW]", matrix_size)
-    eff, pwr, gpu = plot_granular_values(matrix_size)
-    eff_y, pwr_y, gpu_y = np.mean(eff, axis=1), np.mean(pwr, axis=1), np.mean(gpu, axis=1)
-    eff_err, pwr_err, gpu_err = np.std(eff, axis=1), np.std(pwr, axis=1), np.std(gpu, axis=1)
-    eff_err_lower = np.clip(eff_err, None, eff_y)
-    pwr_err_lower = np.clip(pwr_err, None, pwr_y)
+    cpu, _, gpu = plot_granular_values(matrix_size)
+    cpu_y, gpu_y = np.mean(cpu, axis=1), np.mean(gpu, axis=1)
+    cpu_err, gpu_err = np.std(cpu, axis=1), np.std(gpu, axis=1)
+    cpu_err_lower = np.clip(cpu_err, None, cpu_y)
     gpu_err_lower = np.clip(gpu_err, None, gpu_y)
     for i, implementation in enumerate(implementations):
         print(labels[i], "&",
-              "%.2f" % eff_y[i], "&", "%.2f" % eff_err[i], "&",
-              "%.2f" % pwr_y[i], "&", "%.2f" % pwr_err[i], "&",
+              "%.2f" % cpu_y[i], "&", "%.2f" % cpu_err[i], "&",
               "%.2f" % gpu_y[i], "&", "%.2f" % gpu_err[i], "\\\\")
 
     n_categories = len(implementations)
@@ -123,15 +126,14 @@ def plot_granular(matrix_size):
     category_spacing = 0.4
     y_positions = np.arange(n_categories) * (group_height + category_spacing)
     y_positions = y_positions[::-1]
-    y_positions_eff = y_positions + bar_height
+    y_positions_eff = y_positions + bar_height / 2
     y_positions_pwr = y_positions
-    y_positions_gpu = y_positions - bar_height
+    y_positions_gpu = y_positions - bar_height / 2
 
     plt.figure(figsize=(13, 6))
-    plt.barh(y_positions_eff, eff_y, xerr=[eff_err_lower, eff_err], height=bar_height,
-             label="Efficiency Cores", hatch=None)
-    plt.barh(y_positions_pwr, pwr_y, xerr=[pwr_err_lower, pwr_err], height=bar_height,
-             label="Power Cores", hatch="/")
+    plt.barh(y_positions_eff, cpu_y, xerr=[cpu_err_lower, cpu_err], height=bar_height,
+             label="CPU", hatch=None)
+    
     plt.barh(y_positions_gpu, gpu_y, xerr=[gpu_err_lower, gpu_err], height=bar_height,
              label="GPU", hatch="|")
     plt.xlabel("Average power dissipation per component [mW], lower is better")
@@ -158,7 +160,7 @@ def plot_flop():
     plt.cla()
     print("\n\nGFLOP per W")
     components = [f"{n}x{n}" for n in config.sizes]
-    formats = [None, ".", "*", "x", "-", "/"]
+    formats = [None, ".", "*", "x", "-", "/", "o", "+", "&", "v", "^", "<", ">"]
     y, y_err = plot_flop_values()
 
     num_categories = len(labels)
@@ -183,15 +185,44 @@ def plot_flop():
 
 
 def calculate_flops():
+    plt.cla()
     print("\n\nGFLOPS")
+    components = [f"{n}x{n}" for n in config.sizes]
+    formats = [None, ".", "*", "x", "-", "/", "o", "+", "&", "v", "^", "<", ">"]
+
+    num_categories = len(labels)
+    num_components = len(components)
+    bar_width = 0.12
+    group_spacing = 0.6
+    component_spacing = bar_width
+    x_base = np.arange(num_categories) * (num_components * bar_width + group_spacing)
+    x_positions = [x_base + i * component_spacing for i in range(num_components)]
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    y = None
+    y_err = None
+
     for i, implementation in enumerate(implementations):
         raw = [[get_timing(size, trial, implementation) for trial in range(1, 6)] for size in config.sizes]
         times = np.array(raw) / 1_000  # conversion: seconds
         flop = np.array([num_flop(matrix_size) for matrix_size in config.sizes]) / 1_000_000_000  # conversion: giga
         flops = flop[:, np.newaxis] / times
-        mean = np.mean(flops, axis=1)
+        mean = np.mean(flops, axis=1) 
         std = np.std(flops, axis=1)
+        y = np.vstack([y, mean]) if y is not None else mean
+        y_err = np.vstack([y_err, std]) if y_err is not None else std
+
         print(labels[i], "&", " & ".join([f"{m:.2f} $\\pm$ {s:.2f}" for m, s in zip(mean, std)]), "\\\\")
+
+    for i, component in enumerate(components):
+        ax.bar(x_positions[i], y[:, i], yerr=y_err[:, i], width=bar_width, label=component, hatch=formats[i])
+
+    ax.set_xlabel("Implementations")
+    ax.set_ylabel("GFLOP")
+    ax.set_xticks(x_base + (num_components - 1) * bar_width / 2)
+    ax.set_xticklabels(labels)
+    ax.legend(title="Matrix Size", loc="upper left")
+    plt.savefig(RESULTS_FOLDER + "/GFLOPS.png")
 
 
 if __name__ == "__main__":

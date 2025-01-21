@@ -3,4 +3,10 @@ bin/
 cmake-build-*/
 control/__pycache__/
 control/venv/
-control/.env
+control/.venv/
+# control/.env
+
+build/
+data/
+out/
+results/

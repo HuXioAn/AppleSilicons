@@ -35,6 +35,12 @@ implementations = [
     Implementation("./gpu_baseline.app/Contents/MacOS", "gpu_baseline"),
     Implementation("./gpu_mps.app/Contents/MacOS", "gpu_mps"),
     Implementation("./gpu_nv.app/Contents/MacOS", "gpu_nv"),
+] if config.enablePureCPU else [
+    Implementation(".", "blas"),
+    Implementation(".", "dsp"),
+    Implementation("./gpu_baseline.app/Contents/MacOS", "gpu_baseline"),
+    Implementation("./gpu_mps.app/Contents/MacOS", "gpu_mps"),
+    Implementation("./gpu_nv.app/Contents/MacOS", "gpu_nv"),
 ]
 
 
