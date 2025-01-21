@@ -160,7 +160,7 @@ def plot_flop():
     plt.cla()
     print("\n\nGFLOP per W")
     components = [f"{n}x{n}" for n in config.sizes]
-    formats = [None, ".", "*", "x", "-", "/"]
+    formats = [None, ".", "*", "x", "-", "/", "o", "+", "&", "v", "^", "<", ">"]
     y, y_err = plot_flop_values()
 
     num_categories = len(labels)
@@ -185,15 +185,44 @@ def plot_flop():
 
 
 def calculate_flops():
+    plt.cla()
     print("\n\nGFLOPS")
+    components = [f"{n}x{n}" for n in config.sizes]
+    formats = [None, ".", "*", "x", "-", "/", "o", "+", "&", "v", "^", "<", ">"]
+
+    num_categories = len(labels)
+    num_components = len(components)
+    bar_width = 0.12
+    group_spacing = 0.6
+    component_spacing = bar_width
+    x_base = np.arange(num_categories) * (num_components * bar_width + group_spacing)
+    x_positions = [x_base + i * component_spacing for i in range(num_components)]
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    y = None
+    y_err = None
+
     for i, implementation in enumerate(implementations):
         raw = [[get_timing(size, trial, implementation) for trial in range(1, 6)] for size in config.sizes]
         times = np.array(raw) / 1_000  # conversion: seconds
         flop = np.array([num_flop(matrix_size) for matrix_size in config.sizes]) / 1_000_000_000  # conversion: giga
         flops = flop[:, np.newaxis] / times
-        mean = np.mean(flops, axis=1)
+        mean = np.mean(flops, axis=1) 
         std = np.std(flops, axis=1)
+        y = np.vstack([y, mean]) if y is not None else mean
+        y_err = np.vstack([y_err, std]) if y_err is not None else std
+
         print(labels[i], "&", " & ".join([f"{m:.2f} $\\pm$ {s:.2f}" for m, s in zip(mean, std)]), "\\\\")
+
+    for i, component in enumerate(components):
+        ax.bar(x_positions[i], y[:, i], yerr=y_err[:, i], width=bar_width, label=component, hatch=formats[i])
+
+    ax.set_xlabel("Implementations")
+    ax.set_ylabel("GFLOP")
+    ax.set_xticks(x_base + (num_components - 1) * bar_width / 2)
+    ax.set_xticklabels(labels)
+    ax.legend(title="Matrix Size", loc="upper left")
+    plt.savefig(RESULTS_FOLDER + "/GFLOPS.png")
 
 
 if __name__ == "__main__":
