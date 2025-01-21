@@ -1,24 +1,24 @@
-# Apple M1 Matrix Multiplication Benchmarks
+# Apple Silicon Matrix Multiplication Benchmarks
 
 Repository for software for a research project aiming to answer the research question:
-> What is the computational performance (in FLOP/s) and power usage (in W) of single-precision matrix-matrix multiplication on an Apple M1 SoC using pure CPU, CPU accelerators, and GPU?
+> What is the computational performance (in FLOP/s) and power usage (in W) of single-precision matrix-matrix multiplication on an Apple M1 - M4 SoC using pure CPU, CPU accelerators, and GPU?
 
 Kind thanks to the open-source repositories supporting this research:
 * Some Metal shaders from: https://github.com/bkvogel/metal_performance_testing
 * The OpenMP block multiplication implementation from: https://github.com/dmitrydonchenko/Block-Matrix-Multiplication-OpenMP
 
-## Prerequisites
+## Environment
 
 This project requires Xcode, C++20 and `libomp`. The following software and versions have been found to work:
-| Name | Version | Installation |
-| --- | --- | --- |
-| macOS | 12.6.7 on M1 Air | |
-| CMake | 3.28 | |
-| Make | 3.81 | |
-| Xcode | 14.0.1 | via Apple Developer website |
-| Clang | 14.0.0 | via Xcode, **not** Homebrew |
-| Metal | 31001.643 | bundled with Xcode |
-| libomp | 19.1.4 | `brew install libomp` |
+| Name | M1 | M2 | M3 | M4 |
+| --- | --- | --- | --- | --- |
+| macOS | 12.6.7    | 15.1.1    | 15.2      | 15.1.1 |
+| CMake | 3.28      | 3.31.4    | 3.31.4    | 3.31.4 |
+| Make  | 3.81      | 3.81      | 3.81      | 3.81   |
+| Xcode | 14.0.1    | 16.2      | 16.2      | 16.2  |
+| AppleClang | 14.0.0    | 16.0.0    | 16.0.0 | 16.0.0 |
+| Metal | 31001.643 | 32023.404 | 32023.404 | 32023.404 |
+| libomp | 19.1.4   | 19.1.7    | 19.1.6    | 19.1.7    |
 
 
 ## Benchmarking
