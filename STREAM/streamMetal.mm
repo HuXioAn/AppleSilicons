@@ -1,9 +1,33 @@
-// Objective-C file: main.m
+// Objective-C file
 #import <Foundation/Foundation.h>
 #include <sys/types.h>
 #import <Metal/Metal.h>
 #import <getopt.h>
 #import <stdio.h>
+
+
+/*
+   STREAM benchmark implementation in Metal. Based on CUDA implementation by NVIDIA Corporation.
+
+COPY:       a(i) = b(i)
+SCALE:      a(i) = q*b(i)
+SUM:        a(i) = b(i) + c(i)
+TRIAD:      a(i) = b(i) + q*c(i)
+
+It measures the memory system on the device.
+The implementation is in double precision.
+
+Code based on the code developed by John D. McCalpin
+http://www.cs.virginia.edu/stream/FTP/Code/stream.c
+
+Written by: Massimiliano Fatica, NVIDIA Corporation
+
+Further modifications by: Ben Cumming, CSCS; Andreas Herten (JSC/FZJ); Sebastian Achilles (JSC/FZJ)
+
+Further modifications by: Gabin Schieffer (KTH)
+
+Metal implementation by: Andong Hu (KTH)
+*/
 
 #define NTIMES 20
 
