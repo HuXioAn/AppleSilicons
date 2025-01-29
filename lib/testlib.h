@@ -9,6 +9,7 @@
 #include <iostream>
 #include <signal.h>
 #include <string>
+#include <thread>
 
 #include <cassert>
 
@@ -80,8 +81,14 @@ void test_suite(MatMul consumer, const std::string &pathPrefix = "../data/") {
     auto before = std::chrono::high_resolution_clock::now();
     consumer(n, memory_length, left, right, out);
     auto after = std::chrono::high_resolution_clock::now();
-    internal_power_sample();
     auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before);
+
+    // powermetrics sample periods should be longer than 10ms, otherwise it ignores the second signal
+    if (elapsed.count() < 10000000) {
+        // sleep to ensure the second signal is received
+        std::this_thread::sleep_for(std::chrono::milliseconds(10 - elapsed.count() / 1000000));
+    }
+    internal_power_sample(); 
 #ifndef NDEBUG
     std::cout << n << ": check " << out[INDEX(n, 0, 0)] << " took " << elapsed.count() << "ns" << std::endl;
 #else
