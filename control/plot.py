@@ -3,11 +3,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-plt.rcParams["font.family"] = "serif"
+plt.rcParams.update({
+    "text.usetex": True,                  
+    "font.family": "serif",                
+    "font.serif": ["Computer Modern"],    
+    "font.size": 10,                      
+    "axes.labelsize": 12,                 
+    "axes.titlesize": 12,                 
+    "legend.fontsize": 10,              
+    "xtick.labelsize": 10,                
+    "ytick.labelsize": 10,                
+})
 
 SoC = ["M1", "M2", "M3", "M4"]
 
-sizes = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+sizes = [2048, 4096, 8192, 16384]
 
 RESULTS_FOLDER = "results"
 RAW_DATA_FOLDER = "out"
@@ -29,6 +39,20 @@ def get_powers(matrix_size, trial, implementation):
 
     extract = lambda row: int(row.split(" ")[2])
     with open(RAW_DATA_FOLDER + f"/{matrix_size}x{matrix_size}/{trial}/{implementation}/power.txt", "r") as f:
+        for line in f.readlines():
+            if line.startswith("CPU Power"):
+                cpu = int(extract(line))
+            # elif line.startswith("P-Cluster Power"):
+            #     pwr = int(extract(line))
+            elif line.startswith("GPU Power"):
+                gpu = int(extract(line))
+    return cpu, pwr, gpu
+
+def getPower(path, matrix_size, trial, implementation):
+    cpu, pwr, gpu = None, 0, None
+
+    extract = lambda row: int(row.split(" ")[2])
+    with open(path + "/" + RAW_DATA_FOLDER + f"/{matrix_size}x{matrix_size}/{trial}/{implementation}/power.txt", "r") as f:
         for line in f.readlines():
             if line.startswith("CPU Power"):
                 cpu = int(extract(line))
@@ -86,26 +110,160 @@ def plot_power_implementation(implementation, label, fmt, color):
     all_data = np.sum(get_powers_data(implementation), axis=2)
     y = np.mean(all_data, axis=1)
     err = np.std(all_data, axis=1)
-    plt.errorbar(sizes, y, yerr=err, fmt=fmt, color=color, label=label)
-    print(label, "&", " & ".join([f"{m:.2f} & {s:.2f}" for m, s in zip(y, err)]), "\\\\")
+    plt.errorbar(np.arange(len(sizes)), y, yerr=err, fmt=fmt, color=color, label=label)
+    # print(label, "&", " & ".join([f"{m:.2f} & {s:.2f}" for m, s in zip(y, err)]), "\\\\")
 
 
 def plot_power():
     plt.cla()
     print("\n\nPOWER [mW]")
 
-    plot_power_implementation("baseline", "Naive", "o", "C0")
-    plot_power_implementation("omp", "Block Multiplication", "s", "C3")
+    # plot_power_implementation("baseline", "Naive", "o", "C0")
+    # plot_power_implementation("omp", "Block Multiplication", "s", "C3")
     plot_power_implementation("blas", "BLAS", "v", "C1")
     plot_power_implementation("dsp", "vDSP", "^", "C2")
     plot_power_implementation("gpu_baseline", "Naive Shader", "D", "C4")
     plot_power_implementation("gpu_nv", "Cutlass-Style Shader", "h", "C5")
     plot_power_implementation("gpu_mps", "MPS", "*", "C6")
     plt.xlabel("Matrix size")
-    plt.xticks(sizes)
+    plt.xticks(np.arange(len(sizes)))
     plt.ylabel("Average power dissipation [mW], lower is better")
     plt.legend(title="Implementation")
-    plt.savefig(RESULTS_FOLDER + "/power.png", dpi=300)
+    # plt.savefig(RESULTS_FOLDER + "/power.pdf", format="pdf", dpi=300, bbox_inches="tight")
+    plt.show()
+
+def plot_power_allchips(chipPath):
+    implementations = ["baseline", "omp", "blas", "gpu_baseline", "gpu_nv", "gpu_mps"]
+    labels = ["CPU-Single", "CPU-OMP", "CPU-Accelerate", "GPU-Naive", "GPU-CUTLASS", "GPU-MPS"] 
+
+    sizes = [2048, 4096, 8192, 16384]
+
+    fmt = ["o", "s", "v", "^", "D", "h", "*"]
+
+    print("\n\nPOWER-ALL")
+
+
+    fig, axs = plt.subplots(1, len(SoC), figsize=(10, 5), sharey=True)
+
+    for i, chip in enumerate(SoC):
+        for j, implementation in enumerate(implementations):
+            if implementation in ["baseline", "omp"]:
+                raw = [[getPower(chipPath[i], size, trial, implementation) for trial in range(1, 6)] for size in sizes[0:-2]]
+            else:
+                raw = [[getPower(chipPath[i], size, trial, implementation) for trial in range(1, 6)] for size in sizes]
+            processed = np.array(raw)
+            all_data = np.sum(processed, axis=2)
+            y = np.mean(all_data, axis=1)
+            err = np.std(all_data, axis=1)
+            axs[i].errorbar(np.arange(len(raw)), y, yerr=err, fmt=fmt[j], label=labels[j])
+
+        axs[i].set_xticks(np.arange(len(sizes)), sizes)
+        axs[i].set_xlabel(chip)
+        axs[i].set_yticks(np.arange(0, 20000, 2000))
+        # axs[i].set_yticks([])
+        axs[i].grid(True, linestyle="--", alpha=0.5)
+
+
+        if i == 0:
+            axs[i].set_ylabel("Average Power Dissipation [W]")
+
+            axs[i].set_yticklabels(np.arange(0, 20, 2))
+            # axs[i].legend(title="Implementation", loc="upper left")
+    
+    fig.legend(
+        labels=labels,
+        # title="Implementation",
+        loc="lower center",
+        ncol=len(implementations),
+        # bbox_to_anchor=(0.5, -0.2),
+        frameon=False
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
+    plt.savefig(f"{RESULTS_FOLDER}/Power.pdf", format="pdf", dpi=300, bbox_inches="tight")
+    plt.show()
+
+
+def getFlops(path, matrix_size, trial, implementation):
+    getTime = lambda path, size, trial, implementation: int(open(f"{path}/out/{size}x{size}/{trial}/{implementation}/timing.txt", "r").read()) / 1_000_000  # time in ms
+    flop = num_flop(matrix_size) / 1_000_000_000
+    time = getTime(path, matrix_size, trial, implementation) / 1_000  # conversion: seconds
+    flops = flop / time
+    return flops
+
+def plot_efficiency_allchips(chipPath):
+    # Plot GFLOPS/W for all chips
+    implementations = ["baseline", "omp", "blas", "gpu_baseline", "gpu_nv", "gpu_mps"]
+    labels = ["CPU-Single", "CPU-OMP", "CPU-Accelerate", "GPU-Naive", "GPU-CUTLASS", "GPU-MPS"]
+    sizes = [2048, 4096, 8192, 16384]
+
+    fmt = ["o", "s", "v", "^", "D", "h", "*"]
+
+    print("\n\nGFLOPS/W-ALL")
+
+    fig, axs = plt.subplots(1, len(SoC), figsize=(10, 5), sharey=True)
+
+    for i, chip in enumerate(SoC):
+
+
+        for j, implementation in enumerate(implementations):
+
+            if implementation in ["baseline", "omp"]:
+                sizeCount = len(sizes) - 2
+            else:
+                sizeCount = len(sizes)
+
+            resultImpl = []
+
+            for k, matrix_size in enumerate(sizes):
+                if k == sizeCount:
+                    break
+
+                power = [getPower(chipPath[i], matrix_size, trial, implementation) for trial in range(1, 6)]
+                watts = np.sum(np.array(power), axis=1) / 1_000  # conversion: milli watt to watt, total cpu+gpu
+                # averaged_watts = np.mean(watts, axis=0) # 1d array
+
+                flop = num_flop(matrix_size) / 1_000_000_000 #gflop
+
+                # get time 
+                getTime = lambda path, size, trial, implementation: int(open(f"{path}/out/{size}x{size}/{trial}/{implementation}/timing.txt", "r").read()) / 1_000_000.0  # time in ms
+                times = [getTime(chipPath[i], matrix_size, trial, implementation) / 1000.0 for trial in range(1, 6)]
+                flops = np.full(len(times), flop) / times
+       
+                flops_per_watt = flops / watts
+
+                mean = np.mean(flops_per_watt, axis=0)
+                std = np.std(flops_per_watt, axis=0)
+
+                resultImpl.append((mean, std))
+
+            axs[i].errorbar(np.arange(sizeCount), [resultImpl[k][0] for k in range(sizeCount)], yerr=[resultImpl[k][1] for k in range(sizeCount)], fmt=fmt[j], label=labels[j])
+              
+
+       
+        
+
+        axs[i].set_xticks(np.arange(len(sizes)))
+        axs[i].set_xticklabels(sizes)
+        axs[i].set_yscale("log")
+        axs[i].set_xlabel(chip)
+        axs[i].grid(True, linestyle="--", alpha=0.5)
+
+        if i == 0:
+            axs[i].set_ylabel("Efficiency (GFLOPS/W)")
+
+    fig.legend(
+        labels=labels,
+        loc="lower center",
+        ncol=len(implementations),
+        frameon=False
+    )
+
+    plt.tight_layout(rect=[0, 0.05, 1, 1])
+    plt.savefig(f"{RESULTS_FOLDER}/Efficiency.pdf", format="pdf", dpi=300, bbox_inches="tight")
+    plt.show()
+
+
 
 
 def plot_granular_values(matrix_size):
@@ -291,7 +449,7 @@ def calculate_flops_allchips_cpu(chipPath, size):
 
     # Global adjustments
     plt.tight_layout()
-    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-cpu.png", dpi=300)
+    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-cpu.pdf", format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
 def calculate_flops_allchips_acc(chipPath, size):
@@ -355,7 +513,7 @@ def calculate_flops_allchips_acc(chipPath, size):
 
     # Global adjustments
     plt.tight_layout()
-    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-ACC.png", dpi=300)
+    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-ACC.pdf", format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
 def calculate_flops_allchips_best(chipPath, sizes):
@@ -426,7 +584,7 @@ def calculate_flops_allchips_best(chipPath, sizes):
 
     # Global adjustments
     plt.tight_layout()
-    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-Best-acc.png", dpi=300)
+    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-Best-acc.pdf", format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
 
@@ -443,11 +601,20 @@ if __name__ == "__main__":
     RESULTS_FOLDER = os.path.join(path, RESULTS_FOLDER)
     setup(RESULTS_FOLDER)
     # plot_timing()
+
     # plot_power()
+
     # for ms in sizes:
     #     plot_granular(ms)
     # plot_flop()
     # calculate_flops()
-    calculate_flops_allchips_acc(chipPath, 8192)
-    calculate_flops_allchips_cpu(chipPath, 1024)
-    calculate_flops_allchips_best(chipPath, sizes)
+
+    # calculate_flops_allchips_acc(chipPath, 8192)
+    # calculate_flops_allchips_cpu(chipPath, 1024)
+    # calculate_flops_allchips_best(chipPath, sizes)
+
+    # plot_power_allchips(chipPath)
+
+    plot_efficiency_allchips(chipPath)
+
+

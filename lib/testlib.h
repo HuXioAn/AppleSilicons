@@ -76,6 +76,7 @@ void test_suite(MatMul consumer, const std::string &pathPrefix = "../data/") {
     internal_load_matrix(pathPrefix, n, 0, left);
     internal_load_matrix(pathPrefix, n, 1, right);
     // Perform matrix multiplication.
+    internal_power_sample();
     auto before = std::chrono::high_resolution_clock::now();
     consumer(n, memory_length, left, right, out);
     auto after = std::chrono::high_resolution_clock::now();

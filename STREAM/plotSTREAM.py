@@ -7,7 +7,17 @@ import numpy as np
 formats = [None, ".", "*", "x", "-", "/", "o", "+", "&", "v", "^", "<", ">"]
 
 
-plt.rcParams["font.family"] = "serif"
+plt.rcParams.update({
+    "text.usetex": True,                  
+    "font.family": "serif",                
+    "font.serif": ["Computer Modern"],    
+    "font.size": 10,                      
+    "axes.labelsize": 12,                 
+    "axes.titlesize": 12,                 
+    "legend.fontsize": 10,              
+    "xtick.labelsize": 10,                
+    "ytick.labelsize": 10,                
+})
 
 # Function to parse files and extract data
 def parse_stream_results(directory):
@@ -30,10 +40,11 @@ def parse_stream_results(directory):
             cpu_bandwidth.append(cpu_data)
 
         # Parse GPU file
+        toSI = (1 << 30) / 1e9
         with open(gpu_file, "r") as f:
             content = f.read()
             gpu_data = [
-                float(match.group(2))
+                float(match.group(2)) * toSI
                 for match in re.finditer(r"^\s*(Copy|Scale|Add|Triad):\s*([\d.]+)", content, re.M)
             ]
             gpu_bandwidth.append(gpu_data)
@@ -92,7 +103,7 @@ def plot_bandwidth(title, groups, metrics, cpu_bandwidth, gpu_bandwidth, ylabel,
     # Show the plot
     plt.tight_layout()
     plt.show()
-    ax.figure.savefig("STREAM.png", dpi=300)
+    ax.figure.savefig("STREAM.pdf", format="pdf", dpi=300, bbox_inches="tight")
 
 
 # Main script
@@ -110,7 +121,7 @@ if __name__ == "__main__":
     metrics, groups, cpu_bandwidth, gpu_bandwidth = parse_stream_results(directory)
 
     plot_bandwidth(
-        title="STREAM Benchmark Results",
+        title="",
         groups=groups,
         metrics=metrics,
         cpu_bandwidth=cpu_bandwidth,
