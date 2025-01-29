@@ -12,10 +12,10 @@ Kind thanks to the open-source repositories supporting this research:
 This project requires Xcode, C++20 and `libomp`. The following software and versions have been found to work:
 | Name | M1 | M2 | M3 | M4 |
 | --- | --- | --- | --- | --- |
-| macOS | 12.6.7    | 15.1.1    | 15.2      | 15.1.1 |
+| macOS | 14.7.2    | 15.1.1    | 15.2      | 15.1.1 |
 | CMake | 3.28      | 3.31.4    | 3.31.4    | 3.31.4 |
 | Make  | 3.81      | 3.81      | 3.81      | 3.81   |
-| Xcode | 14.0.1    | 16.2      | 16.2      | 16.2  |
+| Xcode | 14.0.1, 15.4    | 16.2      | 16.2      | 16.2  |
 | AppleClang | 14.0.0    | 16.0.0    | 16.0.0 | 16.0.0 |
 | Metal | 31001.643 | 32023.404 | 32023.404 | 32023.404 |
 | libomp | 19.1.4   | 19.1.7    | 19.1.6    | 19.1.7    |
