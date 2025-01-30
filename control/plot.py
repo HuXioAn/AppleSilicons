@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import itertools
 
 plt.rcParams.update({
     "text.usetex": True,                  
@@ -15,7 +16,11 @@ plt.rcParams.update({
     "ytick.labelsize": 10,                
 })
 
-SoC = [ "M2", "M3", "M4"]
+prop_cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+shifted_colors = list(itertools.islice(itertools.cycle(prop_cycle), 2, len(prop_cycle) + 2))
+
+
+SoC = ["M1", "M2", "M3", "M4"]
 
 sizes = [2048, 4096, 8192, 16384]
 
@@ -215,7 +220,7 @@ def plot_power_allchips_bar(chipPath, sizes):
             err = np.std(all_data, axis=1)
             
             x_offset = [idx + (j + 0.5 - len(implementations) / 2) * barWidth for idx in range(len(y))]
-            ax.bar(x_offset, y, width=barWidth, yerr=err, capsize=3, label=labels[j] if i == 0 else "")
+            ax.bar(x_offset, y, width=barWidth, yerr=err, capsize=3, label=labels[j], hatch=formats[j])
     
     fig.legend(labels=labels, loc="lower center", ncol=len(implementations), frameon=False)
     plt.subplots_adjust(left=0.12, bottom=0.12, top=0.88)
@@ -535,7 +540,7 @@ def calculate_flops_allchips_acc(chipPath, size):
         for j, (mean, std) in enumerate(zip(means, stds)):
             bar = ax.barh(
                 y_positions[len(y_positions)-j - 1], mean, xerr=std, height=bar_width, alpha=0.8, 
-                label=labels[j] if i == 0 else None, hatch=formats[j]
+                label=labels[j], hatch=formats[j+2], color=shifted_colors[j]
             )
             if i == 0:  # Collect legend handles only for the first subplot
                 handles.append(bar)
@@ -606,7 +611,7 @@ def calculate_flops_allchips_best(chipPath, sizes):
         for j, (mean, std) in enumerate(zip(means, stds)):
             bar = ax.barh(
                 y_positions[len(y_positions)-j - 1], mean, xerr=std, height=bar_width, alpha=0.8, 
-                label=labels[j] if i == 0 else None, hatch=formats[j]
+                label=labels[j], hatch=formats[j+2], color=shifted_colors[j]
             )
             if i == 0:  # Collect legend handles only for the first subplot
                 handles.append(bar)
