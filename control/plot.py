@@ -284,6 +284,7 @@ def plot_efficiency_allchips(chipPath, sizes):
                 std = np.std(flops_per_watt, axis=0)
 
                 resultImpl.append((mean, std))
+                # print(f"{chip} {labels[j]} {matrix_size}x{matrix_size}: {mean:.2f} GFLOPS/W ± {std:.2f}")
 
             axs[i].errorbar(np.arange(sizeCount), [resultImpl[k][0] for k in range(sizeCount)], yerr=[resultImpl[k][1] for k in range(sizeCount)], fmt=fmt[j], label=labels[j])
               
@@ -501,6 +502,78 @@ def calculate_flops_allchips_cpu(chipPath, size):
     plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-cpu.pdf", format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
+def calculateFlopsAllchipsCpu_Vertical(chipPath, size):
+    implementations = ["baseline", "omp"]
+    labels = ["CPU-Single", "CPU-OMP"] 
+
+    print("\n\nGFLOPS-all")
+    component = f"{size}x{size}" 
+
+    flop = num_flop(size) / 1_000_000_000  # conversion: giga
+
+    getTime = lambda path, size, trial, implementation: int(open(f"{path}/out/{size}x{size}/{trial}/{implementation}/timing.txt", "r").read()) / 1_000_000  # time in ms
+
+    results = []
+    for i, chip in enumerate(SoC):
+        chip_results = []
+        for j, implementation in enumerate(implementations):
+            raw = [getTime(chipPath[i], size, trial, implementation) for trial in range(1, 6)] 
+            times = np.array(raw) / 1_000  # conversion: seconds
+            flops = np.full(5, flop) / times
+
+            mean = np.mean(flops, axis=0) 
+            std = np.std(flops, axis=0)
+            chip_results.append((mean, std))
+
+        results.append(chip_results)
+
+    bar_width = 0.3
+    fig, axs = plt.subplots(1, len(SoC), figsize=(len(SoC) * 2, 4), sharey=True)
+    
+    # 确保 axs 是可迭代的（当 SoC 只有一个芯片时）
+    if len(SoC) == 1:
+        axs = [axs]
+
+    handles = []
+
+    for i, (chip, ax) in enumerate(zip(SoC, axs)):
+        means = [results[i][j][0] for j in range(len(implementations))]
+        stds = [results[i][j][1] for j in range(len(implementations))]
+
+        # 计算 x 轴位置
+        x_positions = np.arange(len(implementations))
+
+        # 绘制垂直柱状图
+        for j, (mean, std) in enumerate(zip(means, stds)):
+            bar = ax.bar(
+                x_positions[j], mean, yerr=std, width=bar_width, alpha=0.8, 
+                label=labels[j] if i == 0 else None, hatch=formats[j]
+            )
+            if i == 0:  # 只收集一次图例
+                handles.append(bar)
+
+        ax.set_xticks(x_positions)
+        ax.set_xticklabels([])
+        ax.set_title(f"{chip}", fontsize=10, loc="left")
+
+        if i == 0:
+            ax.set_ylabel(f"GFLOPS-{size}x{size}", fontsize=12)
+
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+    # 添加全局图例
+    fig.legend(
+        handles=[h[0] for h in handles],
+        labels=labels,
+        loc="lower center", ncol=len(labels), frameon=False)
+
+    # 调整布局
+    # plt.subplots_adjust(left=0.02, bottom=0.02, top=0.88)
+    plt.tight_layout(rect=[0.02, 0.03, 0.98, 1])
+    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-cpu-vertical.pdf", format="pdf", dpi=300, bbox_inches="tight")
+    plt.show()
+
+
 def calculate_flops_allchips_acc(chipPath, size):
 
     implementations = ["blas", "gpu_baseline", "gpu_nv", "gpu_mps"]
@@ -565,6 +638,78 @@ def calculate_flops_allchips_acc(chipPath, size):
     plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-ACC.pdf", format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
+
+def calculateFlopsAllchipsAcc_Vertical(chipPath, size):
+    implementations = ["blas", "gpu_baseline", "gpu_nv", "gpu_mps"]
+    labels = ["CPU-Accelerate", "GPU-Naive", "GPU-CUTLASS", "GPU-MPS"] 
+
+    print("\n\nGFLOPS-all")
+    component = f"{size}x{size}" 
+
+    flop = num_flop(size) / 1_000_000_000  # conversion: giga
+
+    getTime = lambda path, size, trial, implementation: int(open(f"{path}/out/{size}x{size}/{trial}/{implementation}/timing.txt", "r").read()) / 1_000_000  # time in ms
+
+    results = []
+    for i, chip in enumerate(SoC):
+        chip_results = []
+        for j, implementation in enumerate(implementations):
+            raw = [getTime(chipPath[i], size, trial, implementation) for trial in range(1, 6)] 
+            times = np.array(raw) / 1_000  # conversion: seconds
+            flops = np.full(5, flop) / times
+
+            mean = np.mean(flops, axis=0) 
+            std = np.std(flops, axis=0)
+            chip_results.append((mean, std))
+
+        results.append(chip_results)
+
+    bar_width = 0.3
+    fig, axs = plt.subplots(1, len(SoC), figsize=(len(SoC) * 2.5, 5), sharey=True)
+    
+    # 确保 axs 是可迭代的（当 SoC 只有一个芯片时）
+    if len(SoC) == 1:
+        axs = [axs]
+
+    handles = []
+
+    for i, (chip, ax) in enumerate(zip(SoC, axs)):
+        means = [results[i][j][0] for j in range(len(implementations))]
+        stds = [results[i][j][1] for j in range(len(implementations))]
+
+        # 计算 x 轴位置
+        x_positions = np.arange(len(implementations))
+
+        # 绘制垂直柱状图
+        for j, (mean, std) in enumerate(zip(means, stds)):
+            bar = ax.bar(
+                x_positions[j], mean, yerr=std, width=bar_width, alpha=0.8, 
+                label=labels[j] if i == 0 else None, hatch=formats[j+2], color=shifted_colors[j]
+            )
+            if i == 0:  # 只收集一次图例
+                handles.append(bar)
+
+        ax.set_xticks(x_positions)
+        # ax.set_xticklabels(labels, fontsize=10, rotation=45)
+        ax.set_xticklabels([])
+        ax.set_title(f"{chip}", fontsize=10, loc="left")
+
+        if i == 0:
+            ax.set_ylabel(f"GFLOPS-{size}x{size}", fontsize=12)
+
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+    # 添加全局图例
+    fig.legend(
+        handles=[h[0] for h in handles],
+        labels=labels,
+        loc="lower center", ncol=len(labels), frameon=False)
+
+    # 调整布局
+    plt.tight_layout(rect=[0.02, 0.03, 0.98, 1])
+    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-{component}-ACC-vertical.pdf", format="pdf", dpi=300, bbox_inches="tight")
+    plt.show()
+
 def calculate_flops_allchips_best(chipPath, sizes):
 
     implementations = ["blas", "gpu_baseline", "gpu_nv", "gpu_mps"]
@@ -609,6 +754,7 @@ def calculate_flops_allchips_best(chipPath, sizes):
         # Plot horizontal bar chart with hatches
         y_positions = np.arange(len(implementations))
         for j, (mean, std) in enumerate(zip(means, stds)):
+            # print(f"{chip} {labels[j]} {best_sizes[j]}:\t {mean:.2f}G ± {std:.2f}")
             bar = ax.barh(
                 y_positions[len(y_positions)-j - 1], mean, xerr=std, height=bar_width, alpha=0.8, 
                 label=labels[j], hatch=formats[j+2], color=shifted_colors[j]
@@ -634,6 +780,85 @@ def calculate_flops_allchips_best(chipPath, sizes):
     # Global adjustments
     plt.tight_layout()
     plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-Best-acc.pdf", format="pdf", dpi=300, bbox_inches="tight")
+    plt.show()
+
+def calculateFlopsAllchipsBest_Vertical(chipPath, sizes):
+    implementations = ["blas", "gpu_baseline", "gpu_nv", "gpu_mps"]
+    labels = ["CPU-Accelerate", "GPU-Naive", "GPU-CUTLASS", "GPU-MPS"] 
+
+    print("\n\nGFLOPS-Best")
+
+    getTime = lambda path, size, trial, implementation: int(open(f"{path}/out/{size}x{size}/{trial}/{implementation}/timing.txt", "r").read()) / 1_000_000  # time in ms
+
+    results = []  # 存储不同芯片的结果
+    for i, chip in enumerate(SoC):
+        chip_results = []  # 存储不同实现方式的结果
+        for j, implementation in enumerate(implementations):
+            best = []  # 记录最佳 size
+            for k, size in enumerate(sizes):
+                flop = num_flop(size) / 1_000_000_000  # 转换为 GFLOPS
+                raw = [getTime(chipPath[i], size, trial, implementation) for trial in range(1, 6)] 
+                times = np.array(raw) / 1_000  # 转换为秒
+                flops = np.full(5, flop) / times
+
+                mean = np.mean(flops, axis=0) 
+                std = np.std(flops, axis=0)
+
+                if len(best) == 0 or mean > best[0]:
+                    best = (mean, std, size)
+                
+            chip_results.append(best)
+
+        results.append(chip_results)
+
+    bar_width = 0.3
+    fig, axs = plt.subplots(1, len(SoC), figsize=(len(SoC) * 2.5, 5), sharey=True)
+    
+    # 确保 axs 是可迭代的（当 SoC 只有一个芯片时）
+    if len(SoC) == 1:
+        axs = [axs]
+
+    handles = []
+
+    for i, (chip, ax) in enumerate(zip(SoC, axs)):
+        means = [results[i][j][0] for j in range(len(implementations))]
+        stds = [results[i][j][1] for j in range(len(implementations))]
+        best_sizes = [results[i][j][2] for j in range(len(implementations))]
+
+        # 计算 x 轴位置
+        x_positions = np.arange(len(implementations))
+
+        # 绘制垂直柱状图
+        for j, (mean, std) in enumerate(zip(means, stds)):
+            bar = ax.bar(
+                x_positions[j], mean, yerr=std, width=bar_width, alpha=0.8, 
+                label=labels[j] if i == 0 else None, hatch=formats[j+2], color=shifted_colors[j]
+            )
+            if i == 0:  # 只收集一次图例
+                handles.append(bar)
+
+        ax.set_xticks(x_positions)
+        ax.set_xticklabels([])  # 不显示 x 轴标签
+        ax.set_title(f"{chip}", fontsize=10, loc="left")
+
+        if i == 0:
+            ax.set_ylabel(f"GFLOPS-Best", fontsize=12)
+
+        # 在每个柱子顶部添加最佳 size 作为标注
+        for j, size in enumerate(best_sizes):
+            ax.text(x_positions[j], means[j] + stds[j] * 0.1, str(size), ha='center', va='bottom', fontsize=9, color='black')
+
+        ax.grid(True, linestyle="--", alpha=0.5)
+
+    # 添加全局图例
+    fig.legend(
+        handles=[h[0] for h in handles],
+        labels=labels,
+        loc="lower center", ncol=len(labels), frameon=False)
+
+    # 调整布局
+    plt.tight_layout(rect=[0.02, 0.03, 0.98, 1])
+    plt.savefig(f"{RESULTS_FOLDER}/GFLOPS-Best-acc-vertical.pdf", format="pdf", dpi=300, bbox_inches="tight")
     plt.show()
 
 
@@ -762,8 +987,13 @@ if __name__ == "__main__":
     plot_power_allchips_bar(chipPath, [2048, 4096, 8192, 16384])
 
     calculate_flops_allchips_acc(chipPath, 8192)
+    calculateFlopsAllchipsAcc_Vertical(chipPath, 8192)
+    
     calculate_flops_allchips_cpu(chipPath, 1024)
+    calculateFlopsAllchipsCpu_Vertical(chipPath, 1024)
+
     calculate_flops_allchips_best(chipPath, [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384])
+    calculateFlopsAllchipsBest_Vertical(chipPath, [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384])
 
     plot_power_allchips(chipPath, [2048, 4096, 8192, 16384])
     plot_efficiency_allchips(chipPath, [2048, 4096, 8192, 16384])
